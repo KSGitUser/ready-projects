@@ -1,5 +1,5 @@
 <template>
-  <q-page class="flex flex-center">
+  <q-page>
     <h5>Camera Page</h5>
   </q-page>
 </template>
