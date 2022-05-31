@@ -38,7 +38,7 @@
       <div class="row justify-center q-ma-md">
         <q-input
           v-model="post.caption"
-          class="col col-sm-6"
+          class="col col-sm-8"
           label="Caption"
           dense
         />
@@ -46,12 +46,20 @@
       <div class="row justify-center q-ma-md">
         <q-input
           v-model="post.location"
-          class="col col-sm-6"
+          class="col col-sm-8"
           label="Location"
           dense
+          :loading="locationLoading"
         >
           <template v-slot:append>
-            <q-btn round dense flat icon="eva-navigation-2-outline"/>
+            <q-btn
+              v-if="!locationLoading && locationSupported"
+              round
+              dense
+              flat
+              icon="eva-navigation-2-outline"
+              @click="getLocation"
+            />
           </template>
         </q-input>
       </div>
@@ -81,6 +89,12 @@ export default {
       cameraStream: null,
       imageUpload: [],
       hasCameraSupport: true,
+      locationLoading: false,
+    }
+  },
+  computed: {
+    locationSupported() {
+      return !!navigator.geolocation
     }
   },
   methods: {
@@ -135,6 +149,36 @@ export default {
       }
       reader.readAsDataURL(file);
     },
+    getLocation() {
+      this.locationLoading = true;
+      navigator.geolocation.getCurrentPosition(position => {
+        this.getCityAndCountry(position);
+      }, err => {
+        this.locationError()
+      }, { timeout: 7000})
+    },
+    getCityAndCountry({ coords }) {
+      let apiUrl = `https://geocode.xyz/${coords.latitude},${coords.longitude}?json=1&lang=en`
+      this.$axios.get(apiUrl).then(result => {
+        this.locationSuccess(result.data);
+      }).catch(err => {
+        this.locationError()
+      })
+    },
+    locationSuccess({ city, country }) {
+      this.post.location = city;
+      if (country) {
+        this.post.location += `, ${country}`
+      }
+      this.locationLoading = false;
+    },
+    locationError() {
+      this.$q.dialog({
+        title: 'Error',
+        message: 'Could not find location'
+      });
+      this.locationLoading = false;
+    }
   },
   mounted() {
     this.initCamera();
