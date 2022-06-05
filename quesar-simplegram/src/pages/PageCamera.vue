@@ -17,7 +17,7 @@
       <q-btn
         v-if="hasCameraSupport"
         @click="captureImage"
-        round
+        :disabled="imageCaptured"
         color="grey-10"
         icon="eva-camera"
         syze="lg"
@@ -39,7 +39,7 @@
         <q-input
           v-model="post.caption"
           class="col col-sm-8"
-          label="Caption"
+          label="Caption *"
           dense
         />
       </div>
@@ -65,7 +65,14 @@
       </div>
     </div>
     <div class="row justify-center q-mt-lg">
-      <q-btn unelevated rounded color="primary" label="Post Image"/>
+      <q-btn
+        unelevated
+        rounded
+        color="primary"
+        label="Post Image"
+        @click="addPost"
+        :disabled="!post.caption || !post.photo"
+      />
     </div>
   </q-page>
 </template>
@@ -104,7 +111,7 @@ export default {
       }).then(stream => {
         this.$refs.video.srcObject = stream;
         this.cameraStream = stream;
-      }).catch(error => {
+      }).catch(() => {
         this.hasCameraSupport = false;
       })
     },
@@ -154,7 +161,7 @@ export default {
       navigator.geolocation.getCurrentPosition(position => {
         this.getCityAndCountry(position);
       }, err => {
-        this.locationError()
+        this.locationError(err)
       }, { timeout: 7000})
     },
     getCityAndCountry({ coords }) {
@@ -162,7 +169,7 @@ export default {
       this.$axios.get(apiUrl).then(result => {
         this.locationSuccess(result.data);
       }).catch(err => {
-        this.locationError()
+        this.locationError(err)
       })
     },
     locationSuccess({ city, country }) {
@@ -172,13 +179,40 @@ export default {
       }
       this.locationLoading = false;
     },
-    locationError() {
+    locationError(err) {
       this.$q.dialog({
         title: 'Error',
         message: 'Could not find location'
       });
-      this.locationLoading = false;
-    }
+      this.locationLoading = false
+      console.error(err)
+    },
+    async addPost() {
+      this.$q.loading.show();
+
+      const formData = new FormData();
+      for (const key of Reflect.ownKeys(this.post)) {
+        if (key !== 'photo') {
+          formData.append(key, this.post[key]);
+          continue;
+        }
+        formData.append('file', this.post.photo, `${this.post.id}.png`);
+      }
+
+      try {
+        const response = await this.$axios.post(`${process.env.API}/createPost`, formData);
+        // eslint-disable-next-line no-console
+        console.log('response =>', response);
+      } catch(e) {
+        console.error(e)
+        this.$q.dialog({
+          title: 'Error',
+          message: 'Sorry, could not create post!'
+        });
+      } finally {
+        this.$q.loading.hide();
+      }
+    },
   },
   mounted() {
     this.initCamera();
