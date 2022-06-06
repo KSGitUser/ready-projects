@@ -49,6 +49,9 @@ app.get('/posts', async (request, response) => {
     posts.push(doc.data())
   })
 
+  // eslint-disable-next-line no-console
+  console.log('posts =>', posts);
+
   response.send(posts)
 })
 
