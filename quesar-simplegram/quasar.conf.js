@@ -9,7 +9,7 @@
 // https://v1.quasar.dev/quasar-cli/quasar-conf-js
 
 const API_LOCAL = 'http://localhost:3001'
-const API_PRODUCTION='https://simplegram-backend.herokuapp.com/'
+const API_PRODUCTION='https://simplegram-backend.herokuapp.com'
 
 
 module.exports = function (/* ctx */) {
@@ -118,7 +118,7 @@ module.exports = function (/* ctx */) {
 
     // https://v1.quasar.dev/quasar-cli/developing-pwa/configuring-pwa
     pwa: {
-      workboxPluginMode: 'GenerateSW', // 'GenerateSW' or 'InjectManifest'
+      workboxPluginMode: 'InjectManifest', // 'GenerateSW' or 'InjectManifest'
       workboxOptions: {}, // only for GenerateSW
       manifest: {
         name: `Simplegramm PWA App`,

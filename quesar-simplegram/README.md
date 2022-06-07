@@ -2,6 +2,11 @@
 
 Quasar PWA project
 
+You can find demo by url: [https://quasar-simplegram.web.app](https://quasar-simplegram.web.app)
+
+Backend deploy on heroku
+Frontend deploy on firebase
+
 ## Install the dependencies
 ```bash
 yarn
@@ -22,3 +27,5 @@ quasar build
 
 ### Customize the configuration
 See [Configuring quasar.conf.js](https://v1.quasar.dev/quasar-cli/quasar-conf-js).
+
+
