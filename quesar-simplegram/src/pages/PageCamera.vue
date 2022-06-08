@@ -200,9 +200,7 @@ export default {
       }
 
       try {
-        const response = await this.$axios.post(`${process.env.API}/createPost`, formData);
-        // eslint-disable-next-line no-console
-        console.log('response =>', response);
+        await this.$axios.post(`${process.env.API}/createPost`, formData);
       } catch(e) {
         console.error(e)
         this.$q.dialog({

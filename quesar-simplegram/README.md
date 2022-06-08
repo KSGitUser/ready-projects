@@ -4,8 +4,9 @@ Quasar PWA project
 
 You can find demo by url: [https://quasar-simplegram.web.app](https://quasar-simplegram.web.app)
 
-Backend deploy on heroku
-Frontend deploy on firebase
+Backend is deployed on heroku
+
+Frontend id deployed on firebase
 
 ## Install the dependencies
 ```bash
