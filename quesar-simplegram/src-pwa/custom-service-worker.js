@@ -26,14 +26,12 @@
 
   let backgroundSyncSupport = 'sync' in self.registration
 
-  // eslint-disable-next-line no-console
-  console.log('backgroundSyncSupport =>', backgroundSyncSupport);
-
 /*
   queue - createPost
 */
 
-  let createPostQueue = null;
+  let createPostQueue = null
+
   if (backgroundSyncSupport) {
     createPostQueue = new Queue('createPostQueue');
   }
@@ -59,7 +57,9 @@
   );
 
   registerRoute(
-    ({url}) => url.pathname.startsWith('/posts'),
+    ({url}) =>  {
+      return url.pathname.startsWith('/posts')
+    },
     new NetworkFirst({
       cacheName: 'Network-First',
     })
@@ -77,16 +77,8 @@
   events - fetch
  */
 
-// eslint-disable-next-line no-console
-console.log('backgroundSyncSupport =>', backgroundSyncSupport);
-
 if (backgroundSyncSupport) {
   self.addEventListener('fetch', (event) => {
-    // Add in your own criteria here to return early if this
-    // isn't a request that should use background sync.
-
-    // eslint-disable-next-line no-console
-    console.log('event =>', event);
     if (event.request.method !== 'POST') {
       return;
     }
@@ -96,13 +88,14 @@ if (backgroundSyncSupport) {
         const response = await fetch(event.request.clone());
         return response;
       } catch (error) {
-        await createPostQueue.pushRequest({request: event.request});
-        return error;
+        return await createPostQueue.pushRequest({request: event.request});
       }
     };
 
-    event.respondWith(bgSyncLogic());
-  });
+    event.waitUntil(bgSyncLogic());
+
+  })
+
 }
 
 
