@@ -8,9 +8,17 @@
             v-for="post in posts"
             :key="post.id"
             class="card-post q-mb-md"
+            :class="{ 'bg-red-1' : post.offline }"
             flat
             bordered
           >
+            <q-badge
+              v-if="post.offline"
+              color="red"
+              class="badge-offline absolute-top-right"
+            >
+              Stored offline
+            </q-badge>
             <q-item>
               <q-item-section avatar>
                 <q-avatar>
@@ -90,6 +98,7 @@
 
 <script>
 import { date } from 'quasar';
+import { openDB } from 'idb';
 
 export default {
   name: 'PageHome',
@@ -99,11 +108,47 @@ export default {
       loadingPosts: false,
     }
    },
+  computed: {
+    serviceWorkerSupported() {
+      return 'serviceWorker' in navigator;
+    }
+  },
   methods: {
+    async getOfflinePosts() {
+      try{
+        const db = await openDB('workbox-background-sync')
+        const offlinePostsRequests = await db.getAll('requests')
+        offlinePostsRequests.forEach(offlinePostRequest => {
+          if (offlinePostRequest.queueName === 'createPostQueue') {
+            const newRequest = new Request(offlinePostRequest.requestData.url, offlinePostRequest.requestData)
+            newRequest.formData().then(formData => {
+              const offlinePost = {}
+              offlinePost.id = formData.get('id')
+              offlinePost.caption = formData.get('caption')
+              offlinePost.location = formData.get('location')
+              offlinePost.date = parseInt(formData.get('date'))
+              offlinePost.offline = true
+
+              const reader = new FileReader()
+              reader.readAsDataURL(formData.get('file'))
+              reader.onloadend = () => {
+                offlinePost.imageUrl = reader.result
+                this.posts.unshift(offlinePost)
+              }
+            })
+          }
+        })
+      } catch (e) {
+        console.error('getOfflinePosts error', e)
+      }
+    },
     async getPosts() {
       try {
          this.loadingPosts = true;
         ({ data: this.posts  }= await this.$axios.get(`${process.env.API}/posts`));
+        if (!navigator.onLine) {
+          this.getOfflinePosts();
+        }
       } catch(e) {
         this.$q.dialog({
           title: 'Error',
@@ -114,10 +159,25 @@ export default {
         this.loadingPosts = false;
       }
 
+    },
+    onServerWorkerMessage(event) {
+      if (event?.data?.msg === 'offline-post-uploaded') {
+        const offlinePostCount = this.posts.filter(post => post.offline).length
+        this.posts[offlinePostCount -1].offline = false
+      }
+    },
+    listenForOfflinePostUploaded() {
+      if (this.serviceWorkerSupported) {
+        const channel = new BroadcastChannel('sw-messages');
+        channel.addEventListener('message', this.onServerWorkerMessage);
+      }
     }
   },
-  created() {
+  activated() {
     this.getPosts();
+  },
+  created() {
+    this.listenForOfflinePostUploaded()
   },
   filters: {
     niceDate(initialValue) {
@@ -129,6 +189,10 @@ export default {
 
 <slyle lang="scss">
   .card-post {
+    .badge-offline {
+      border-top-left-radius: 0 !important;
+    }
+
     .q-img {
       aspect-ratio: 9 / 6;
     }

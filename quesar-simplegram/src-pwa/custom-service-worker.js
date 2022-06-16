@@ -33,7 +33,24 @@
   let createPostQueue = null
 
   if (backgroundSyncSupport) {
-    createPostQueue = new Queue('createPostQueue');
+    createPostQueue = new Queue('createPostQueue', {
+      onSync: async ({queue}) => {
+        let entry;
+        while (entry = await queue.shiftRequest()) {
+          try {
+            await fetch(entry.request);
+            const channel = new BroadcastChannel('sw-messages');
+            channel.postMessage({msg: 'offline-post-uploaded'});
+          } catch (error) {
+            console.error('Replay failed for request', entry.request, error);
+
+            // Put the entry back in the queue and re-throw the error:
+            await queue.unshiftRequest(entry);
+            throw error;
+          }
+        }
+      }
+    });
   }
 
 /*

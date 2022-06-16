@@ -102,6 +102,12 @@ export default {
   computed: {
     locationSupported() {
       return !!navigator.geolocation
+    },
+    backgroundSyncSupported() {
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        return true
+      }
+      return  false
     }
   },
   methods: {
@@ -203,10 +209,17 @@ export default {
         await this.$axios.post(`${process.env.API}/createPost`, formData);
       } catch(e) {
         console.error(e)
-        this.$q.dialog({
-          title: 'Error',
-          message: 'Sorry, could not create post!'
-        });
+        if (!navigator.onLine && this.backgroundSyncSupported) {
+          this.$q.notify('Post created offline')
+          setTimeout(() => {
+            this.$router.push('/')
+          }, 0)
+        } else {
+          this.$q.dialog({
+            title: 'Error',
+            message: 'Sorry, could not create post!'
+          });
+        }
       } finally {
         this.$q.loading.hide();
       }
