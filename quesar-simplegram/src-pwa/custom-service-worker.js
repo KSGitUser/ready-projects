@@ -115,6 +115,29 @@ if (backgroundSyncSupport) {
 
 }
 
+/*
+  events - notifications
+ */
+
+self.addEventListener('notificationclick', (event) => {
+  const { notification, action } = event
+  // eslint-disable-next-line no-console
+  console.log('notification =>', notification)
+  // eslint-disable-next-line no-console
+  console.log('action =>', action)
+
+  if (action === 'hello') {
+    // eslint-disable-next-line no-console
+    console.log('Hello button was clicked =>')
+  } else if (action === 'goodbye') {
+    console.log('Goodbye button was clicked =>')
+  } else {
+    console.log('Main notification was clicked =>')
+  }
+
+  notification.close()
+})
+
 
 
 

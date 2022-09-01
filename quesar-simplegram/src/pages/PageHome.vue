@@ -1,6 +1,50 @@
 <template>
   <q-page class="constrain q-pa-md">
 
+    <transition
+      appear
+      enter-active-class="animated fadeIn"
+      leave-active-class="animated fadeOut"
+    >
+      <div v-if="showNotificationBanner && pushNotificationsSupported" class="banner-container bg-primary">
+        <div class="constrain">
+          <q-banner
+            class="bg-grey-3 q-mb-md">
+            <template v-slot:avatar>
+              <q-icon name="eva-bell-outline" color="primary" />
+            </template>
+            Would you like to enable notifications?
+            <template v-slot:action>
+              <q-btn
+                flat
+                label="Yes"
+                color="primary"
+                dense
+                class="q-px-sm"
+                @click="enableNotifications"
+              />
+              <q-btn
+                flat
+                label="Later"
+                color="primary"
+                dense
+                class="q-px-sm"
+                @click="showNotificationBanner = false"
+              />
+              <q-btn
+                flat
+                label="Never"
+                color="primary"
+                dense
+                class="q-px-sm"
+                @click="neverShowNotificationsBanner"
+              />
+            </template>
+          </q-banner>
+        </div>
+      </div>
+    </transition>
+
     <div class="row q-col-gutter-lg">
       <div class="col-12 col-sm-8">
         <template v-if="!loadingPosts && posts.length">
@@ -106,11 +150,15 @@ export default {
     return {
       posts: [],
       loadingPosts: false,
+      showNotificationBanner: false,
     }
    },
   computed: {
     serviceWorkerSupported() {
       return 'serviceWorker' in navigator;
+    },
+    pushNotificationsSupported() {
+      return 'PushManager' in window
     }
   },
   methods: {
@@ -171,6 +219,77 @@ export default {
         const channel = new BroadcastChannel('sw-messages');
         channel.addEventListener('message', this.onServerWorkerMessage);
       }
+    },
+    async enableNotifications() {
+      if (!this.pushNotificationsSupported) {
+        return;
+      }
+
+      const notificationsPermission = await Notification.requestPermission();
+      this.neverShowNotificationsBanner();
+      if (notificationsPermission === 'granted') {
+        this.displayGrantedNotification();
+      }
+    },
+    neverShowNotificationsBanner() {
+      this.showNotificationBanner = false
+      this.$q.localStorage.set('neverShowNotificationsBanner', true)
+    },
+    initNotificationsBanner() {
+      const neverShowNotificationBanner  = this.$q.localStorage.getItem('neverShowNotificationsBanner')
+
+      if (!neverShowNotificationBanner) {
+        this.showNotificationBanner = true;
+      }
+    },
+    async displayGrantedNotification() {
+      let notificationConfig = {
+        body: 'Thanks for subscribing!',
+        icon: '/icons/icon-128x128.png',
+        image: '/icons/icon-128x128.png',
+        badge: '/icons/icon-128x128.png',
+        actions: [
+          {
+            action: 'hello',
+            title: 'Hello',
+            icon: '/icons/icon-128x128.png'
+          },
+          {
+            action: 'goodbye',
+            title: 'Goodbye',
+            icon: '/icons/icon-128x128.png'
+          },
+        ]
+      }
+
+      if (!(this.$q.platform?.is.ios || this.$q.platform?.is.mac)) {
+        notificationConfig = { ...notificationConfig, ...{
+          renotify: true,
+          tag: 'confirm-notification',
+          vibrate: [100, 50, 200],
+          actions: [
+            {
+              action: 'hello',
+              title: 'Hello',
+              icon: '/icons/icon-128x128.png'
+            },
+            {
+              action: 'goodbye',
+              title: 'Goodbye',
+              icon: '/icons/icon-128x128.png'
+            },
+          ]
+        }}
+      }
+      // new Notification("You're subscribed to notifications!", notificationConfig)
+
+      if (this.serviceWorkerSupported && this.pushNotificationsSupported) {
+        const swReg = await navigator.serviceWorker.ready;
+        swReg.showNotification(
+          "You're subscribed to notifications!",
+          notificationConfig
+        )
+      }
     }
   },
   activated() {
@@ -178,6 +297,9 @@ export default {
   },
   created() {
     this.listenForOfflinePostUploaded()
+  },
+  mounted() {
+    this.initNotificationsBanner()
   },
   filters: {
     niceDate(initialValue) {
