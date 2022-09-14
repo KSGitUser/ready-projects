@@ -36,4 +36,4 @@ yarn-error.log*
 # firebase config
 /backend/serviceAccountKey.json
 
-*.key
+serviceAccountKey.json
