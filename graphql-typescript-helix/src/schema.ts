@@ -1,5 +1,6 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import * as typeDefs from "./schema.graphql";
+import {GraphQLContext} from './context';
 
 // 1
 type Link = {
@@ -8,18 +9,13 @@ type Link = {
     description: string;
 }
 
-// 2
-const links: Link[] = [{
-    id: 'link-0',
-    url: 'www.howtographql.com',
-    description: 'Fullstack tutorial for GraphQL'
-}]
-
 const resolvers = {
     Query: {
         info: () => `This is the API of a Hackernews Clone`,
         // 3
-        feed: () => links,
+        feed: (parent: unknown, args: {}, context: GraphQLContext) => {
+            return context.prisma.link.findMany();
+        },
     },
     // 4
     Link: {
@@ -28,18 +24,19 @@ const resolvers = {
         url: (parent: Link) => parent.url,
     },
     Mutation: {
-        post: (parent: unknown, args: { description: string, url: string}) => {
-            let idCount = links.length;
+        post: (parent: unknown,
+               args: { description: string, url: string},
+               context: GraphQLContext
+        ) => {
 
-            const link: Link = {
-                id: `link-${idCount++}`,
-                description: args.description,
-                url: args.url,
-            };
+            const newLink = context.prisma.link.create({
+                data: {
+                    url: args.url,
+                    description: args.description
+                },
+            });
 
-            links.push(link);
-
-            return link;
+            return newLink;
         }
     }
 }
