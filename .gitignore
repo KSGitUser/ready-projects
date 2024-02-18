@@ -1,4 +1,11 @@
-/**/.*  # ignore all dotted files
-/**/.*/ # ignore all dotted folders
-/**/dist
-/**/node_modules
+# Ignore all dot files in all directories
+**/.*
+
+# Optionally, if you want to ignore all dot directories and their contents, use:
+# **/.*/**
+
+# Ignore 'dist' directories in all subdirectories
+**/dist/
+
+# Ignore 'node_modules' directories in all subdirectories
+**/node_modules/
